@@ -1,0 +1,503 @@
+<html>
+
+<head>
+  <title>AI Trainer | Crop</title>
+  <link rel="icon" href="icons/favicon.ico" type="image/x-icon" />
+  <link href="styles/cropper.min.css" rel="stylesheet" />
+  <link href="librarys/tailwind.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <style>
+    body {
+      background-color: #f2f2f2;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    .cropper-button {
+      background-color: #34455d !important;
+      transition: background-color 0.5s ease !important;
+      color: white !important;
+      padding: 16px !important;
+      border-radius: 6px !important;
+      font-size: 1rem !important;
+      margin: 3px !important;
+    }
+
+    .cropper-button img {
+      margin-right: 5px;
+    }
+
+    .cropper-button:hover {
+      background-color: #00132e !important;
+    }
+
+    .apply-button {
+      margin-top: 30px;
+      display: inline-block;
+    }
+
+    .cropper-container {
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+    }
+
+    .image-container {
+      width: 75%;
+      height: 90vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .image-container img {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .options-container {
+      width: 20%;
+      min-width: 120px;
+    }
+
+    .crop-options {
+      display: block;
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      background: #fff;
+    }
+
+    .image-list {
+      width: 100%;
+      border: 2px solid #111827;
+      border-radius: 6px !important;
+      background-color: white;
+      padding: 10px;
+      max-height: calc(100vh - 300px);
+      min-height: 525px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      margin-top: 20px;
+    }
+
+    .image-list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .image-list>ul {
+      margin-top: 0px;
+    }
+
+    .image-list>ul>li {
+      font-size: 20px;
+      height: 30px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: start;
+      line-height: 20px;
+      min-width: 0;
+    }
+
+    .image-list-item {
+      font-family: Arial, Helvetica, sans-serif;
+      padding: 3px;
+      padding-left: 5px;
+      transition: background-color 0.2s ease !important;
+      align-items: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+    }
+
+    .image-list-entry:not(.image-list-item-selected) .image-list-item:hover {
+      background-color: #818181;
+      border-radius: 6px;
+      color: white;
+    }
+
+
+    .image-list-item-selected {
+      background-color: #4299e1;
+      border-radius: 6px;
+      color: white;
+    }
+
+    #loadingOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.4);
+      z-index: 9999;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      display: flex;
+    }
+
+    .loader {
+      border: 10px solid #f3f3f3;
+      border-top: 10px solid #3498db;
+      border-radius: 50%;
+      width: 80px;
+      height: 80px;
+      animation: spin 1s linear infinite;
+    }
+
+    .loading-text {
+      color: white;
+      margin-top: 16px;
+      font-size: 1.2rem;
+      text-align: center;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="bg-gray-800">
+    <div class="mx-auto max-w-[75%] px-4 sm:px-6 lg:px-8">
+      <div class="flex h-16 items-center justify-start">
+        <span class="text-white text-lg font-semibold">Crop Tool</span>
+      </div>
+    </div>
+  </nav>
+
+
+  <div class="cropper-container py-2">
+    <div class="image-container relative">
+      <img id="image" style="display: none;" />
+      <div id="noImagePlaceholder" class="text-gray-500 text-xl text-center">
+        No image selected. Please add an image to begin cropping.
+      </div>
+    </div>
+
+
+    <div id="croppedPreview" style="margin-top:10px;">
+      <h3>Cropped Preview:</h3>
+      <img id="croppedImageResult" />
+    </div>
+
+    <div class="options-container">
+      <div class="buttons-container flex justify-center">
+        <button class="cropper-button" id="btnAddImages">
+          <i class="fa-solid fa-plus mr-1"></i>
+          Add Images
+        </button>
+        <button class="cropper-button" id="btnDownloadImages">
+          <i class="fa-solid fa-arrow-down mr-1"></i>
+          Download Images
+        </button>
+      </div>
+
+      <div class="mt-4 bg-white p-3 rounded shadow w-full flex flex-col items-center">
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          <label class="flex flex-col text-sm">Start X:
+            <input type="number" id="inputStartX" value="0" class="border p-1 w-full" min="0">
+          </label>
+          <label class="flex flex-col text-sm">End X:
+            <input type="number" id="inputEndX" value="0" class="border p-1 w-full" min="0">
+          </label>
+          <label class="flex flex-col text-sm">Start Y:
+            <input type="number" id="inputStartY" value="0" class="border p-1 w-full" min="0">
+          </label>
+          <label class="flex flex-col text-sm">End Y:
+            <input type="number" id="inputEndY" value="0" class="border p-1 w-full" min="0">
+          </label>
+        </div>
+
+        <button class="cropper-button inline-block px-3 py-1 text-sm" id="btnApplyCropToAll">
+          <i class="fa-solid fa-check mr-1"></i> Apply All
+        </button>
+
+      </div>
+
+      <div class="image-list">
+        <ul id="image_picker"></ul>
+      </div>
+    </div>
+
+    ```
+    <div id="loadingOverlay" style="display: none;">
+      <div class="loader"></div>
+      <p class="loading-text">Cropping is being applied to all images</p>
+    </div>
+    ```
+
+
+    <div></div>
+    <script src="librarys/jquery.min.js"></script>
+    <script src="scripts/cropper.min.js"></script>
+    <script src="scripts/jszip.min.js"></script>
+    <script src="scripts/main.js"></script>
+
+    <script>
+      var cropper = new MultiImageCropper(document.getElementById('image'))
+      var currentIndex = -1
+
+      $(function () {
+        $('#btnAddImages').click(btnAddImages_OnClick)
+        $('#btnDownloadImages').click(prepareLastImageAndDownload)
+        $('#btnApplyCropToAll').click(applyCropToAll);
+
+        setupManualCropInputListeners();
+        setupInputClearOnFocus();
+
+      })
+
+      function setupInputClearOnFocus() {
+        $('#inputStartX, #inputStartY, #inputEndX, #inputEndY').on('focus', function () {
+          if (this.value === '0') {
+            this.value = '';
+          }
+        });
+      }
+
+      $('#inputStartX, #inputStartY, #inputEndX, #inputEndY').on('blur', function () {
+        if (this.value === '') {
+          this.value = '0';
+        }
+      });
+
+      function prepareLastImageAndDownload() {
+        if (currentIndex !== -1) {
+          cropper.cropper.getCroppedCanvas().toBlob((blob) => {
+            MultiImageCropper.imagesArray[currentIndex].croppedImage = blob
+            cropper.DownloadImages()
+          })
+        } else {
+          cropper.DownloadImages()
+        }
+      }
+
+      $(document).on('keydown', function (e) {
+
+        if ($('#image_picker > li[data-selected="true"]').length == 0) {
+          $('#image_picker > li[data-selected="false"]').first().trigger('click')
+        }
+
+        else if (e.key == 'a') {
+          $('#image_picker > li[data-selected="true"]').prev().trigger('click')
+        }
+
+        else if (e.key == 'd') {
+          $('#image_picker > li[data-selected="true"]').next().trigger('click')
+        }
+
+      })
+
+      function btnAddImages_OnClick() {
+        var input = document.getElementById('fileInput')
+        if (!input) {
+          input = document.createElement('input')
+          input.id = 'fileInput'
+          input.type = 'file'
+          input.accept = 'image/*'
+          input.multiple = true
+          document.body.appendChild(input)
+          input.style.display = 'none'
+
+          input.onchange = function (e) {
+
+            $.each(input.files, function (index, value) {
+
+              var totalIndex = MultiImageCropper.imagesArray.length
+              cropper.AddImage(value)
+
+              $('#image_picker').append(`
+                <li class="image-list-entry" data-selected="false" data-image-index="${totalIndex}" id="image_${totalIndex}" onclick="btnImageListItem_OnClick(${totalIndex})">
+                  <span class="image-list-item" title="${value.name}">${value.name}</span>
+                </li>
+              `);
+            })
+
+            handleImageSelection()
+
+            input.value = ''
+
+            cropper.RebuildCropperWithoutAutoCrop();
+
+            if (MultiImageCropper.imagesArray.length > 0) {
+              btnImageListItem_OnClick(0);
+              $('#noImagePlaceholder').hide();
+              $('#image').show();
+
+            }
+
+          }
+        }
+
+        input.click()
+      }
+
+      function btnImageListItem_OnClick(imageIndex) {
+
+        $('[data-image-index="' + currentIndex + '"]').attr('data-selected', false).removeClass('image-list-item-selected');
+
+        $('[data-image-index="' + imageIndex + '"]').attr('data-selected', true).addClass('image-list-item-selected');
+
+        cropper.SelectImage(imageIndex);
+
+        currentIndex = imageIndex;
+      }
+
+      function handleImageSelection() {
+        $(document)
+          .off('keydown')
+          .on('keydown', function (e) {
+
+            if ($('#image_picker > li[data-selected="true"]').length == 0) {
+              $('#image_picker > li[data-selected="false"]').first().trigger('click')
+            }
+
+            else if (e.key == 'a') {
+              $('#image_picker > li[data-selected="true"]').prev().trigger('click')
+            }
+
+            else if (e.key == 'd') {
+              $('#image_picker > li[data-selected="true"]').next().trigger('click')
+            }
+
+          })
+      }
+
+      async function applyCropToAll() {
+        showLoading();
+
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const startX = parseFloat($('#inputStartX').val());
+        const startY = parseFloat($('#inputStartY').val());
+        const endX = parseFloat($('#inputEndX').val());
+        const endY = parseFloat($('#inputEndY').val());
+
+        let errors = [];
+        if (startX < 0) errors.push("Start X cannot be negative.");
+        if (startY < 0) errors.push("Start Y cannot be negative.");
+
+        if (errors.length > 0) {
+          alert(errors.join("\n"));
+          hideLoading();
+          return;
+        }
+
+        const width = endX - startX;
+        const height = endY - startY;
+
+        const cropData = {
+          x: startX,
+          y: startY,
+          width: width,
+          height: height,
+          rotate: 0.0,
+          scaleX: 1.0,
+          scaleY: 1.0
+        };
+
+        for (let i = 0; i < MultiImageCropper.imagesArray.length; i++) {
+          MultiImageCropper.imagesArray[i].crop = { ...cropData };
+
+          const blob = await cropImageWithoutDOM(MultiImageCropper.imagesArray[i].image, cropData);
+          MultiImageCropper.imagesArray[i].croppedImage = blob;
+        }
+
+        if (MultiImageCropper.currentImageIndex !== -1) {
+          cropper.SetData(cropData);
+        }
+
+        hideLoading();
+      }
+
+      function cropImageWithoutDOM(file, cropData) {
+        return new Promise((resolve) => {
+          const img = new Image();
+          const url = URL.createObjectURL(file);
+
+          img.onload = function () {
+            const canvas = document.createElement('canvas');
+            canvas.width = cropData.width;
+            canvas.height = cropData.height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(
+              img,
+              cropData.x, cropData.y, cropData.width, cropData.height,
+              0, 0, cropData.width, cropData.height
+            );
+
+            canvas.toBlob((blob) => {
+              URL.revokeObjectURL(url);
+              resolve(blob);
+            }, file.type || "image/png");
+          };
+
+          img.src = url;
+        });
+      }
+
+      function setupManualCropInputListeners() {
+        const updateCropperFromInputs = () => {
+          const x = parseFloat($('#inputStartX').val()) || 0;
+          const y = parseFloat($('#inputStartY').val()) || 0;
+          const endX = parseFloat($('#inputEndX').val()) || 0;
+          const endY = parseFloat($('#inputEndY').val()) || 0;
+
+          const width = endX - x;
+          const height = endY - y;
+
+          if (width > 0 && height > 0 && MultiImageCropper.currentImageIndex !== -1) {
+            cropper.SetData({
+              x: x,
+              y: y,
+              width: width,
+              height: height,
+              rotate: 0,
+              scaleX: 1,
+              scaleY: 1
+            });
+          }
+        };
+
+        $('#inputStartX, #inputStartY, #inputEndX, #inputEndY').on('input', updateCropperFromInputs);
+      }
+
+      function showLoading() {
+        $('#loadingOverlay').show();
+        $('button').prop('disabled', true);
+        $('#image_picker > li').css('pointer-events', 'none');
+      }
+
+      function hideLoading() {
+        $('#loadingOverlay').hide();
+        $('button').prop('disabled', false);
+        $('#image_picker > li').css('pointer-events', 'auto');
+      }
+
+    </script>
+
+</body>
+
+</html>
