@@ -27,22 +27,6 @@ A simple and lightweight browser-based tool for cropping multiple images with cu
 4. Click **"Apply All"** to apply crop to all images.
 5. Download cropped images as a ZIP.
 
-## 📁 Project Structure
-
-crop-tool/
-│
-├── crop.html
-├── scripts/
-│ ├── cropper.min.js
-│ ├── jszip.min.js
-│ └── main.js
-├── styles/
-│ └── cropper.min.css
-├── librarys/
-│ ├── tailwind.min.css
-│ └── jquery.min.js
-
-
 ## 🧩 License
 
 This project is open-source and available under the [MIT License](LICENSE).
